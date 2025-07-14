@@ -1,0 +1,233 @@
+package backend
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+
+	sqlite_vec "github.com/asg017/sqlite-vec-go-bindings/cgo"
+	_ "github.com/mattn/go-sqlite3"
+)
+
+type SQLiteVec struct {
+	db *sql.DB
+}
+
+func NewSQLiteVec(ctx context.Context, dbPath string) (*SQLiteVec, error) {
+	sqlite_vec.Auto()
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("opening sqlite database: %w", err)
+	}
+
+	return &SQLiteVec{
+		db: db,
+	}, nil
+}
+
+func (s *SQLiteVec) AddWord(
+	ctx context.Context,
+	definition Definition,
+) (_ int64, err error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("beginning transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	embeddingIDs, err := s.AddEmbeddings(ctx, definition.Embeddings)
+	if err != nil {
+		return 0, fmt.Errorf("adding embeddings: %w", err)
+	}
+
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`
+		INSERT INTO words (word, definition, example)
+		VALUES (?, ?, ?)
+		RETURNING id
+		`,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("preparing statement: %w", err)
+	}
+
+	defer stmt.Close()
+
+	var wordID int64
+
+	if err := stmt.QueryRowContext(
+		ctx,
+		definition.Word,
+		definition.Definition,
+		definition.Example,
+	).Scan(&wordID); err != nil {
+		return 0, fmt.Errorf("inserting word details: %w", err)
+	}
+
+	stmt, err = tx.PrepareContext(
+		ctx,
+		`
+		INSERT INTO word_embeddings (word_id, embedding_id)
+		VALUES (?, ?)
+		`,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("preparing statement: %w", err)
+	}
+
+	for _, embeddingID := range embeddingIDs {
+		if _, err := stmt.ExecContext(
+			ctx,
+			wordID,
+			embeddingID,
+		); err != nil {
+			return 0, fmt.Errorf("inserting word embedding: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return wordID, nil
+}
+
+func (s *SQLiteVec) RelatedWords(
+	ctx context.Context,
+	vector Vector,
+	limit int,
+) ([]SimilarDefinition, error) {
+	vec, err := sqlite_vec.SerializeFloat32(vector)
+	if err != nil {
+		return nil, fmt.Errorf("serializing embedding: %w", err)
+	}
+
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`
+		SELECT w.word, w.definition, w.example, best.distance, e.phrase
+		FROM words w
+		JOIN (
+			SELECT 
+				we.word_id,
+				we.embedding_id,
+				vec_distance_cosine(e.embedding, ?) AS distance
+			FROM word_embeddings we
+			JOIN embeddings e ON we.embedding_id = e.id
+			WHERE (we.word_id, distance) IN (
+				SELECT 
+					we2.word_id,
+					MIN(vec_distance_cosine(e2.embedding, ?))
+				FROM word_embeddings we2
+				JOIN embeddings e2 ON we2.embedding_id = e2.id
+				GROUP BY we2.word_id
+			)
+		) best ON w.id = best.word_id
+		JOIN embeddings e ON best.embedding_id = e.id
+		ORDER BY best.distance ASC
+		LIMIT ?
+		`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("preparing statement: %w", err)
+	}
+
+	defer stmt.Close()
+
+	rows, err := stmt.QueryContext(ctx, vec, vec, limit)
+	if err != nil {
+		return nil, fmt.Errorf("querying statement: %w", err)
+	}
+
+	var definitions []SimilarDefinition
+
+	for rows.Next() {
+		var definition SimilarDefinition
+		if err := rows.Scan(
+			&definition.Definition.Word,
+			&definition.Definition.Definition,
+			&definition.Definition.Example,
+			&definition.Distance,
+			&definition.Phrase,
+		); err != nil {
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+
+		definitions = append(definitions, definition)
+	}
+
+	return definitions, nil
+}
+
+func (s *SQLiteVec) AddEmbeddings(
+	ctx context.Context,
+	embeddings []SubDefinition,
+) ([]int64, error) {
+	queryStatement, err := s.db.PrepareContext(
+		ctx,
+		`
+		SELECT id
+		FROM embeddings
+		WHERE phrase = ?
+		`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("preparing query statement: %w", err)
+	}
+
+	defer queryStatement.Close()
+
+	insertStatement, err := s.db.PrepareContext(
+		ctx,
+		`
+		INSERT INTO embeddings (embedding, phrase)
+		VALUES (?, ?)
+		RETURNING id
+		`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("preparing insert statement: %w", err)
+	}
+
+	defer insertStatement.Close()
+
+	var ids []int64
+
+	for _, embedding := range embeddings {
+		embeddingBytes, err := sqlite_vec.SerializeFloat32(embedding.Vector)
+		if err != nil {
+			return nil, fmt.Errorf("serializing embedding: %w", err)
+		}
+
+		var id int64
+
+		if err := queryStatement.QueryRowContext(
+			ctx,
+			embedding.Phrase,
+		).Scan(&id); err == nil {
+			// If the embedding already exists, use its ID.
+			ids = append(ids, id)
+			continue
+		} else if err != sql.ErrNoRows {
+			return nil, fmt.Errorf("querying existing embedding: %w", err)
+		}
+
+		if err := insertStatement.QueryRowContext(
+			ctx,
+			embeddingBytes,
+			embedding.Phrase,
+		).Scan(&id); err != nil {
+			return nil, fmt.Errorf("inserting embedding row: %w", err)
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, nil
+}
