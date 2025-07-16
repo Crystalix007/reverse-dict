@@ -25,6 +25,14 @@ func NewSQLiteVec(ctx context.Context, dbPath string) (*SQLiteVec, error) {
 	}, nil
 }
 
+func (s *SQLiteVec) Close() error {
+	if err := s.db.Close(); err != nil {
+		return fmt.Errorf("closing sqlite database: %w", err)
+	}
+
+	return nil
+}
+
 func (s *SQLiteVec) AddWord(
 	ctx context.Context,
 	definition Definition,
@@ -230,4 +238,38 @@ func (s *SQLiteVec) AddEmbeddings(
 	}
 
 	return ids, nil
+}
+
+func (s *SQLiteVec) GetRandomDefinition(
+	ctx context.Context,
+) (*Definition, error) {
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`
+		SELECT word, definition, example
+		FROM words
+		ORDER BY RANDOM()
+		LIMIT 1
+		`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("preparing statement: %w", err)
+	}
+
+	defer stmt.Close()
+
+	var definition Definition
+
+	if err := stmt.QueryRowContext(ctx).Scan(
+		&definition.Word,
+		&definition.Definition,
+		&definition.Example,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No definitions found
+		}
+		return nil, fmt.Errorf("querying random definition: %w", err)
+	}
+
+	return &definition, nil
 }
