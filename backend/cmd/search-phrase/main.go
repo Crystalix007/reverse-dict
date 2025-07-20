@@ -35,14 +35,13 @@ func Run(ctx context.Context, args []string) error {
 		url.URL{
 			Scheme: "http",
 			Host:   "localhost:28100",
-			Path:   "/v1/embeddings",
 		},
 	)
 	if err != nil {
 		return fmt.Errorf("creating swama api: %w", err)
 	}
 
-	embeddings, err := swama.Embed(args[0])
+	embeddings, err := swama.Embed(ctx, args[0])
 	if err != nil {
 		return fmt.Errorf("embedding phrase: %w", err)
 	}

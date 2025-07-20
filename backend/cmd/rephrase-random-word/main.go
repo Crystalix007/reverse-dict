@@ -49,7 +49,7 @@ func rephraseRandomWord(ctx context.Context) error {
 		return fmt.Errorf("creating SwamaAPI: %w", err)
 	}
 
-	rephrased, err := swama.RephraseDefinition(*def)
+	rephrased, err := swama.RephraseDefinition(ctx, *def)
 	if err != nil {
 		return fmt.Errorf("rephrasing definition: %w", err)
 	}

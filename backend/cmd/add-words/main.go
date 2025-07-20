@@ -58,7 +58,6 @@ func Run(ctx context.Context, flags Flags) error {
 		url.URL{
 			Scheme: "http",
 			Host:   "localhost:28100",
-			Path:   "/v1/embeddings",
 		},
 	)
 	if err != nil {
@@ -79,7 +78,7 @@ func Run(ctx context.Context, flags Flags) error {
 
 		splitDef := backend.SplitDefinition(randWord.Definition)
 
-		embeddingsF64, err := swama.Embed(splitDef...)
+		embeddingsF64, err := swama.Embed(ctx, splitDef...)
 		if err != nil {
 			return fmt.Errorf("embedding word: %w", err)
 		}

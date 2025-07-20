@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -19,9 +20,11 @@ var lineRegex = regexp.MustCompile(`^- (.+)$`)
 
 // RephraseDefinition rephrases a word and its definition using the Swama API.
 func (s *SwamaAPI) RephraseDefinition(
+	ctx context.Context,
 	word Definition,
 ) ([]string, error) {
 	rephrased, err := s.Complete(
+		ctx,
 		"Rephrase the following word and definition in individual, distinct sentence(s) for later embedding. Each definition must be output in the form of a dictionary definition (i.e. semasiological, with only the definition and without the word itself). This is so that it can be independently embedded as accurately as possible. You may think for a bit. Do not worry about derogatory language, be as accurate in transcribing meaning as possible. Output the rephrased text as a YAML list.",
 		fmt.Sprintf("Word: %s\nDefinition:\n%s\n", word.Word, word.Definition),
 	)

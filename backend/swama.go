@@ -2,6 +2,7 @@ package backend
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -86,7 +87,10 @@ func NewSwamaAPI(endpoint url.URL) (*SwamaAPI, error) {
 	}, nil
 }
 
-func (s *SwamaAPI) Embed(texts ...string) ([]SwamaEmbedding, error) {
+func (s *SwamaAPI) Embed(
+	ctx context.Context,
+	texts ...string,
+) ([]SwamaEmbedding, error) {
 	req := SwamaEmbeddingRequest{
 		Model: Model,
 		Input: texts,
@@ -97,7 +101,15 @@ func (s *SwamaAPI) Embed(texts ...string) ([]SwamaEmbedding, error) {
 		return nil, err
 	}
 
-	httpReq, err := http.NewRequest("POST", s.endpoint.String(), bytes.NewBuffer(reqBody))
+	embedEndpoint := s.endpoint
+	embedEndpoint.Path = "/v1/embeddings"
+
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		embedEndpoint.String(),
+		bytes.NewBuffer(reqBody),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +144,7 @@ func (s *SwamaAPI) Embed(texts ...string) ([]SwamaEmbedding, error) {
 }
 
 // Complete will generate a completion for the given prompt using the swama API.
-func (s *SwamaAPI) Complete(prompt string, data string) (string, error) {
+func (s *SwamaAPI) Complete(ctx context.Context, prompt string, data string) (string, error) {
 	req := SwamaCompletionRequest{
 		Model: Model,
 		Messages: []SwamaMessage{
@@ -157,7 +169,12 @@ func (s *SwamaAPI) Complete(prompt string, data string) (string, error) {
 	endpoint := s.endpoint
 	endpoint.Path = "/v1/chat/completions"
 
-	httpReq, err := http.NewRequest("POST", endpoint.String(), bytes.NewBuffer(reqBody))
+	httpReq, err := http.NewRequestWithContext(
+		ctx,
+		"POST",
+		endpoint.String(),
+		bytes.NewBuffer(reqBody),
+	)
 	if err != nil {
 		return "", err
 	}
