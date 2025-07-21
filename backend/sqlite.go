@@ -354,3 +354,38 @@ func (s *SQLiteVec) GetDefinitions(
 		}
 	}
 }
+
+func (s *SQLiteVec) CompareEmbeddings(
+	ctx context.Context,
+	embedding1 Vector,
+	embedding2 Vector,
+) (float64, error) {
+	vec1, err := sqlite_vec.SerializeFloat32(embedding1)
+	if err != nil {
+		return 0, fmt.Errorf("serializing first embedding: %w", err)
+	}
+
+	vec2, err := sqlite_vec.SerializeFloat32(embedding2)
+	if err != nil {
+		return 0, fmt.Errorf("serializing second embedding: %w", err)
+	}
+
+	stmt, err := s.db.PrepareContext(
+		ctx,
+		`
+		SELECT vec_distance_cosine(?, ?)
+		`,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("preparing statement: %w", err)
+	}
+
+	defer stmt.Close()
+
+	var distance float64
+	if err := stmt.QueryRowContext(ctx, vec1, vec2).Scan(&distance); err != nil {
+		return 0, fmt.Errorf("querying distance: %w", err)
+	}
+
+	return distance, nil
+}

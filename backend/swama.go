@@ -13,7 +13,10 @@ import (
 	"time"
 )
 
-const Model = "mlx-community/Qwen3-8B-4bit"
+const (
+	CompletionModel = "mlx-community/Qwen3-8B-4bit"
+	EmbeddingModel  = "mlx-community/Qwen3-Embedding-8B-4bit-DWQ"
+)
 
 // SwamaEmbeddingResponse is the response from the swama embedding API.
 type SwamaEmbeddingResponse struct {
@@ -87,12 +90,30 @@ func NewSwamaAPI(endpoint url.URL) (*SwamaAPI, error) {
 	}, nil
 }
 
+func (s *SwamaAPI) EmbedQuery(
+	ctx context.Context,
+	query string,
+) ([]SwamaEmbedding, error) {
+	query = fmt.Sprintf("Instruct: find the most similar definition\nQuery: %s", query)
+
+	embeddings, err := s.Embed(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("embedding phrase: %w", err)
+	}
+
+	if len(embeddings) == 0 {
+		return nil, errors.New("no embedding found for the provided phrase")
+	}
+
+	return embeddings, nil
+}
+
 func (s *SwamaAPI) Embed(
 	ctx context.Context,
 	texts ...string,
 ) ([]SwamaEmbedding, error) {
 	req := SwamaEmbeddingRequest{
-		Model: Model,
+		Model: EmbeddingModel,
 		Input: texts,
 	}
 
@@ -146,7 +167,7 @@ func (s *SwamaAPI) Embed(
 // Complete will generate a completion for the given prompt using the swama API.
 func (s *SwamaAPI) Complete(ctx context.Context, prompt string, data string) (string, error) {
 	req := SwamaCompletionRequest{
-		Model: Model,
+		Model: CompletionModel,
 		Messages: []SwamaMessage{
 			{
 				Role:    "system",

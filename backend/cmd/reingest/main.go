@@ -51,12 +51,26 @@ func reingest(ctx context.Context) error {
 
 		generatedDefs, err := swama.RephraseDefinition(ctx, *definition)
 		if err != nil {
-			return fmt.Errorf("rephrasing definition: %w", err)
+			slog.ErrorContext(
+				ctx,
+				"rephrasing definition failed",
+				slog.String("word", definition.Word),
+				slog.Any("error", err),
+			)
+
+			continue
 		}
 
 		embeddings, err := swama.Embed(ctx, generatedDefs...)
 		if err != nil {
-			return fmt.Errorf("embedding definitions: %w", err)
+			slog.ErrorContext(
+				ctx,
+				"embedding definitions failed",
+				slog.String("word", definition.Word),
+				slog.Any("error", err),
+			)
+
+			continue
 		}
 
 		subDefinitions := make([]backend.SubDefinition, len(generatedDefs))

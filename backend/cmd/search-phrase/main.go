@@ -41,7 +41,7 @@ func Run(ctx context.Context, args []string) error {
 		return fmt.Errorf("creating swama api: %w", err)
 	}
 
-	embeddings, err := swama.Embed(ctx, args[0])
+	embeddings, err := swama.EmbedQuery(ctx, args[0])
 	if err != nil {
 		return fmt.Errorf("embedding phrase: %w", err)
 	}
