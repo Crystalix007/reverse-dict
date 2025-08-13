@@ -1,1 +1,7 @@
 /*.db
+/comparison-vectors.tsv
+/vec0.dylib
+/words.db-shm
+/words.db-wal
+/swama/
+/run-swama

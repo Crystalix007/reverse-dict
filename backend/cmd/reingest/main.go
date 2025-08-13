@@ -22,7 +22,7 @@ func main() {
 func reingest(ctx context.Context) error {
 	sqlite, err := backend.NewSQLiteVec(
 		ctx,
-		"words.db?_journal_mode=WAL",
+		"words.db",
 	)
 	if err != nil {
 		return fmt.Errorf("creating SQLiteVec: %w", err)

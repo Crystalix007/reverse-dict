@@ -17,7 +17,10 @@ type SQLiteVec struct {
 
 func NewSQLiteVec(ctx context.Context, dbPath string) (*SQLiteVec, error) {
 	sqlite_vec.Auto()
-	db, err := sql.Open("sqlite3", dbPath)
+
+	dsn := fmt.Sprintf("file:%s?cache=shared&_journal_mode=WAL", dbPath)
+
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("opening sqlite database: %w", err)
 	}
