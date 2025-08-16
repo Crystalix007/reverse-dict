@@ -4,21 +4,25 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type API struct {
+	address   url.URL
 	swamaAPI  *SwamaAPI
 	sqliteVec *SQLiteVec
 }
 
 // NewAPI creates a new API instance with the provided Swama API and SQLite
 // vector database.
-func NewAPI(swamaAPI *SwamaAPI, sqliteVec *SQLiteVec) *API {
+func NewAPI(swamaAPI *SwamaAPI, sqliteVec *SQLiteVec, address url.URL) *API {
 	return &API{
+		address:   address,
 		swamaAPI:  swamaAPI,
 		sqliteVec: sqliteVec,
 	}
@@ -28,11 +32,22 @@ func NewAPI(swamaAPI *SwamaAPI, sqliteVec *SQLiteVec) *API {
 func (a *API) Serve() http.Handler {
 	router := chi.NewMux()
 
+	// Strip the API prefix.
+	router.Use(middleware.StripPrefix("/api"))
+
 	api := humachi.New(
 		router,
-		huma.Config{},
+		huma.DefaultConfig("Reverse Dictionary API", "0.0.1"),
 	)
 
+	api.OpenAPI().Servers = []*huma.Server{
+		{
+			Description: "Current environment",
+			URL:         a.address.String(),
+		},
+	}
+
+	// Register endpoints.
 	huma.Get(api, "/search", a.Search)
 
 	return router
@@ -40,6 +55,10 @@ func (a *API) Serve() http.Handler {
 
 // Response structure for search results.
 type SearchResponse struct {
+	Body SearchResponseBody
+}
+
+type SearchResponseBody struct {
 	Results []SimilarDefinition `json:"results"`
 }
 
@@ -48,8 +67,8 @@ type SearchResponse struct {
 func (a *API) Search(
 	ctx context.Context,
 	input *struct {
-		Query string `json:"query" description:"The phrase to search for"`
-		Limit int    `json:"limit" description:"The maximum number of results to return" default:"10"`
+		Query string `query:"query" json:"query" description:"The phrase to search for"`
+		Limit int    `query:"limit" json:"limit" description:"The maximum number of results to return" default:"10"`
 	},
 ) (*SearchResponse, error) {
 	queryEmbedding, err := a.swamaAPI.Embed(ctx, input.Query)
@@ -74,7 +93,13 @@ func (a *API) Search(
 		)
 	}
 
+	if len(results) == 0 {
+		return nil, huma.Error404NotFound("no matching definitions found")
+	}
+
 	return &SearchResponse{
-		Results: results,
+		Body: SearchResponseBody{
+			Results: results,
+		},
 	}, nil
 }

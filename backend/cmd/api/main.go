@@ -8,18 +8,50 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	slogchi "github.com/samber/slog-chi"
+	"github.com/spf13/cobra"
+
 	"github.com/Crystalix007/reverse-dict/backend"
 )
 
+type args struct {
+	host  string
+	quiet bool
+}
+
 func main() {
-	if err := run(); err != nil {
+	var args args
+
+	cmd := cobra.Command{
+		Use:   "api",
+		Short: "Start the API server",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return run(cmd.Context(), &args)
+		},
+	}
+
+	cmd.Flags().StringVarP(&args.host, "listen", "l", "localhost:8080", "Address to bind the server to")
+	cmd.Flags().BoolVarP(&args.quiet, "quiet", "q", false, "Suppress debug log output")
+
+	if err := cmd.Execute(); err != nil {
 		slog.Error("Error running server", slog.Any("error", err))
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	ctx := context.Background()
+func run(ctx context.Context, args *args) error {
+	// If quiet mode is not enabled, set the log level to debug.
+	if !args.quiet {
+		slog.SetDefault(
+			slog.New(
+				slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+					Level: slog.LevelDebug,
+				}),
+			),
+		)
+	}
 
 	sqlite, err := backend.NewSQLiteVec(
 		ctx,
@@ -39,13 +71,50 @@ func run() error {
 		return fmt.Errorf("creating SwamaAPI: %w", err)
 	}
 
-	a := backend.NewAPI(swamaAPI, sqlite)
+	listenAddress := url.URL{
+		Scheme: "http",
+		Host:   args.host,
+	}
 
-	http.Handle("/", a.Serve())
+	apiAddress := listenAddress
+	apiAddress.Path = "/api"
 
-	fmt.Println("Starting server on :8080")
+	api := backend.NewAPI(swamaAPI, sqlite, apiAddress)
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	// Create global mux.
+	router := chi.NewMux()
+
+	http.Handle("/", router)
+
+	router.Use(
+		slogchi.NewWithConfig(
+			slog.Default(),
+			slogchi.Config{
+				DefaultLevel:  slog.LevelDebug,
+				WithTraceID:   true,
+				WithUserAgent: true,
+				WithSpanID:    true,
+			},
+		),
+	)
+
+	// Add CORS to the API endpoints.
+	router.Group(func(router chi.Router) {
+		router.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   []string{listenAddress.String()},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Content-Type", "Authorization"},
+			ExposedHeaders:   []string{"Content-Length"},
+			AllowCredentials: true,
+		}))
+
+		router.Handle("/api/*", api.Serve())
+		router.Get("/api", http.RedirectHandler("/api/docs", http.StatusMovedPermanently).ServeHTTP)
+	})
+
+	slog.InfoContext(ctx, "Starting server", slog.String("address", listenAddress.String()))
+
+	if err := http.ListenAndServe(args.host, nil); err != nil {
 		return fmt.Errorf("starting server: %w", err)
 	}
 
