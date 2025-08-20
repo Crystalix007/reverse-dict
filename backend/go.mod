@@ -3,14 +3,14 @@ module github.com/Crystalix007/reverse-dict/backend
 go 1.23.4
 
 require (
+	github.com/danielgtaylor/huma/v2 v2.34.1
+	github.com/go-chi/cors v1.2.2
 	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/samber/slog-chi v1.15.0
 	github.com/spf13/cobra v1.9.1
 )
 
 require (
-	github.com/danielgtaylor/huma/v2 v2.34.1 // indirect
-	github.com/go-chi/cors v1.2.2 // indirect
-	github.com/samber/slog-chi v1.15.0 // indirect
 	go.opentelemetry.io/otel v1.29.0 // indirect
 	go.opentelemetry.io/otel/trace v1.29.0 // indirect
 )
@@ -22,5 +22,5 @@ require (
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/net v0.42.0 // indirect
 )
