@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reverse Dict</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="/static/htmx.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <h1>Reverse Dict</h1>
+    <form id="search-form" hx-post="/search" hx-target="#result" hx-swap="innerHTML">
+        <input type="text" name="search-input" placeholder="Search by definition">
+        <input type="submit" />
+    </form>
+    <div id="result"></div>
+</body>
+
+</html>
