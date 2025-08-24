@@ -71,7 +71,7 @@ func (a *API) Search(
 		Limit int    `query:"limit" json:"limit" description:"The maximum number of results to return" default:"10"`
 	},
 ) (*SearchResponse, error) {
-	queryEmbedding, err := a.swamaAPI.Embed(ctx, input.Query)
+	queryEmbedding, err := a.swamaAPI.EmbedQuery(ctx, input.Query)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"embedding query: %w",
