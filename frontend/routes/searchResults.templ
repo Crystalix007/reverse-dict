@@ -9,7 +9,8 @@ templ searchResults(searchResults []backend.Definition) {
             for _, item := range searchResults {
                 <li>
                     <h2>{ item.Word }</h2>
-                    <p>{ item.Definition }</p>
+                    <blockquote class="definition">{ item.Definition }</blockquote>
+                    <cite>{ item.Author }</cite>
                 </li>
             }
         </ul>
