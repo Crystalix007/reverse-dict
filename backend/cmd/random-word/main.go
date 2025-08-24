@@ -13,5 +13,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%s: %s\n", definition.Word, definition.Definition)
+	fmt.Printf("[%s] %s: %s\n", definition.Author, definition.Word, definition.Definition)
 }

@@ -86,8 +86,8 @@ func (s *SQLiteVec) AddWord(
 		insertWordStmt, err := s.db.PrepareContext(
 			ctx,
 			`
-		INSERT INTO words (word, definition, example)
-		VALUES (?, ?, ?)
+		INSERT INTO words (word, definition, example, author)
+		VALUES (?, ?, ?, ?)
 		ON CONFLICT DO NOTHING
 		RETURNING id
 		`,
@@ -103,6 +103,7 @@ func (s *SQLiteVec) AddWord(
 			definition.Word,
 			definition.Definition,
 			definition.Example,
+			definition.Author,
 		).Scan(&wordID); err != nil {
 			return 0, fmt.Errorf("inserting word details: %w", err)
 		}
@@ -153,14 +154,14 @@ func (s *SQLiteVec) RelatedWords(
 		SELECT w.word, w.definition, w.example, best.distance, e.phrase
 		FROM words w
 		JOIN (
-			SELECT 
+			SELECT
 				we.word_id,
 				we.embedding_id,
 				vec_distance_cosine(e.embedding, ?) AS distance
 			FROM word_embeddings we
 			JOIN embeddings e ON we.embedding_id = e.id
 			WHERE (we.word_id, distance) IN (
-				SELECT 
+				SELECT
 					we2.word_id,
 					MIN(vec_distance_cosine(e2.embedding, ?))
 				FROM word_embeddings we2
@@ -281,7 +282,7 @@ func (s *SQLiteVec) GetRandomDefinition(
 	stmt, err := s.db.PrepareContext(
 		ctx,
 		`
-		SELECT word, definition, example
+		SELECT word, definition, example, author
 		FROM words
 		ORDER BY RANDOM()
 		LIMIT 1
@@ -299,6 +300,7 @@ func (s *SQLiteVec) GetRandomDefinition(
 		&definition.Word,
 		&definition.Definition,
 		&definition.Example,
+		&definition.Author,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No definitions found
@@ -317,7 +319,7 @@ func (s *SQLiteVec) GetDefinitions(
 		stmt, err := s.db.PrepareContext(
 			ctx,
 			`
-		SELECT word, definition, example
+		SELECT word, definition, example, author
 		FROM words
 		ORDER BY word
 		`,
@@ -345,6 +347,7 @@ func (s *SQLiteVec) GetDefinitions(
 				&definition.Word,
 				&definition.Definition,
 				&definition.Example,
+				&definition.Author,
 			); err != nil {
 				yield(nil, fmt.Errorf("scanning row: %w", err))
 

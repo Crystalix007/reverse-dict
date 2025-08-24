@@ -3,6 +3,7 @@ CREATE TABLE words (
     word TEXT NOT NULL,
     definition TEXT NOT NULL,
     example TEXT NOT NULL,
+    author TEXT NOT NULL,
     UNIQUE (word, definition)
 ) STRICT;
 

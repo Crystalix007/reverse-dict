@@ -93,6 +93,7 @@ func Run(ctx context.Context, flags Flags) error {
 		}
 
 		definition := backend.Definition{
+			Author:     randWord.Author,
 			Word:       randWord.Word,
 			Definition: randWord.Definition,
 			Example:    randWord.Example,

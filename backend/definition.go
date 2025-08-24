@@ -10,6 +10,7 @@ import (
 var referenceRegex = regexp.MustCompile(`\[([^\]]+)\]`)
 
 type Definition struct {
+	Author     string          `json:"author"`
 	Word       string          `json:"word"`
 	Definition string          `json:"definition"`
 	Example    string          `json:"example"`
