@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -17,17 +18,18 @@ func SearchResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	searchInput := r.Form["search-input"]
+	searchInput := r.Form.Get("query")
 
-	if len(searchInput) > 0 {
+	if searchInput != "" {
 		searchResults, err := backendclient.Get[backend.SearchResponseBody](
 			r.Context(),
 			url.URL{
 				Path:     "search",
-				RawQuery: "query=" + searchInput[0],
+				RawQuery: "query=" + searchInput,
 			},
 		)
 		if err != nil {
+			slog.ErrorContext(r.Context(), "Failed to get search results", slog.String("query", searchInput), slog.Any("error", err))
 			http.Error(w, "Failed to get search results", http.StatusInternalServerError)
 			return
 		}

@@ -1,0 +1,20 @@
+package routes
+
+import "github.com/Crystalix007/reverse-dict/backend"
+
+templ searchResults(searchResults []backend.Definition) {
+	<div>
+		<h1>Results</h1>
+		<ul>
+			for _, item := range searchResults {
+				<li>
+					<h2>{ item.Word }</h2>
+					<blockquote class="definition">{ item.Definition }</blockquote>
+					if item.Author != "" {
+						<cite>{ item.Author }</cite>
+					}
+				</li>
+			}
+		</ul>
+	</div>
+}

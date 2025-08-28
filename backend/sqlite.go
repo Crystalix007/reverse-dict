@@ -151,7 +151,7 @@ func (s *SQLiteVec) RelatedWords(
 	stmt, err := s.db.PrepareContext(
 		ctx,
 		`
-		SELECT w.word, w.definition, w.example, best.distance, e.phrase
+		SELECT w.word, w.definition, w.example, w.author, best.distance, e.phrase
 		FROM words w
 		JOIN (
 			SELECT
@@ -193,6 +193,7 @@ func (s *SQLiteVec) RelatedWords(
 			&definition.Definition.Word,
 			&definition.Definition.Definition,
 			&definition.Definition.Example,
+			&definition.Definition.Author,
 			&definition.Distance,
 			&definition.Phrase,
 		); err != nil {
