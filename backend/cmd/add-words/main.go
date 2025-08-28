@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -103,6 +104,8 @@ func Run(ctx context.Context, flags Flags) error {
 		if _, err := db.AddWord(ctx, definition); err != nil {
 			return fmt.Errorf("adding word: %w", err)
 		}
+
+		slog.InfoContext(ctx, "added word", slog.String("word", randWord.Word))
 	}
 
 	return nil
