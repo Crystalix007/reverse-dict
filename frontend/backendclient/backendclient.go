@@ -31,7 +31,11 @@ func Get[T any](
 		Fragment: overlayURL.Fragment,
 	}
 
-	slog.InfoContext(ctx, "backendclient: performing GET request", slog.String("url", joinedURL.String()))
+	var statusCode int
+
+	defer func() {
+		slog.InfoContext(ctx, "backendclient: performing GET request", slog.String("url", joinedURL.String()), slog.Int("status_code", statusCode))
+	}()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", joinedURL.String(), nil)
 	if err != nil {
@@ -42,6 +46,8 @@ func Get[T any](
 	if err != nil {
 		return nil, fmt.Errorf("backendclient: performing GET request: %w", err)
 	}
+
+	statusCode = res.StatusCode
 
 	defer res.Body.Close()
 
