@@ -85,7 +85,12 @@ func (a *API) Search(
 
 	primaryEmbedding := NewEmbeddingFromFloat64(queryEmbedding[0])
 
-	results, err := a.sqliteVec.RelatedWords(ctx, primaryEmbedding, input.Limit)
+	results, err := a.sqliteVec.RelatedWords(
+		ctx,
+		ModelQwen3Embedding8B4B_DWQ,
+		primaryEmbedding,
+		input.Limit,
+	)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"searching in SQLiteVec: %w",

@@ -48,13 +48,13 @@ func Run(ctx context.Context, args []string) error {
 
 	embedding := backend.NewEmbeddingFromFloat64(embeddings[0])
 
-	relatedWords, err := db.RelatedWords(ctx, embedding, 10)
+	relatedWords, err := db.RelatedWords(ctx, backend.ModelQwen3Embedding8B4B_DWQ, embedding, 10)
 	if err != nil {
 		return fmt.Errorf("getting related words: %w", err)
 	}
 
 	for _, word := range relatedWords {
-		fmt.Printf("%s: %s (%.2f)\n", word.Definition.Word, word.Definition.Definition, word.Distance)
+		fmt.Printf("%s: %s (%.2f)\n", word.Word.Word, word.Word.Definition, word.Distance)
 		fmt.Printf("\t-> %s\n", word.Phrase)
 	}
 

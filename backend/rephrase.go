@@ -21,7 +21,7 @@ var lineRegex = regexp.MustCompile(`^- (.+)$`)
 // RephraseDefinition rephrases a word and its definition using the Swama API.
 func (s *SwamaAPI) RephraseDefinition(
 	ctx context.Context,
-	word Definition,
+	word Word,
 ) ([]string, error) {
 	rephrased, err := s.Complete(
 		ctx,

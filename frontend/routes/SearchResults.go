@@ -11,7 +11,7 @@ import (
 
 // SearchResults renders the search results page.
 func SearchResults(w http.ResponseWriter, r *http.Request) {
-	var definitions []backend.Definition
+	var words []backend.Word
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
@@ -34,13 +34,13 @@ func SearchResults(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		definitions = make([]backend.Definition, 0, len(searchResults.Results))
+		words = make([]backend.Word, 0, len(searchResults.Results))
 
 		for _, result := range searchResults.Results {
-			definitions = append(definitions, result.Definition)
+			words = append(words, result.Word)
 		}
 	}
 
-	component := searchResults(definitions)
+	component := searchResults(words)
 	component.Render(r.Context(), w)
 }
