@@ -92,11 +92,13 @@ func NewSwamaAPI(endpoint url.URL) (*SwamaAPI, error) {
 
 func (s *SwamaAPI) EmbedQuery(
 	ctx context.Context,
-	query string,
+	queries ...string,
 ) ([]SwamaEmbedding, error) {
-	query = fmt.Sprintf("Instruct: find the most similar definition\nQuery: %s", query)
+	for i := range queries {
+		queries[i] = fmt.Sprintf("Instruct: find the most similar definition\nQuery: %s", queries[i])
+	}
 
-	embeddings, err := s.Embed(ctx, query)
+	embeddings, err := s.Embed(ctx, queries...)
 	if err != nil {
 		return nil, fmt.Errorf("embedding phrase: %w", err)
 	}

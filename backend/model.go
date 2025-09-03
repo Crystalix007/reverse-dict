@@ -1,5 +1,7 @@
 package backend
 
+import "fmt"
+
 type Model int
 
 const (
@@ -19,6 +21,19 @@ func (m Model) String() string {
 	}
 
 	panic("unknown model")
+}
+
+func ModelFromString(s string) (Model, error) {
+	switch s {
+	case "mlx-community/Qwen3-Embedding-8B-4bit-DWQ":
+		return ModelQwen3Embedding8B4B_DWQ, nil
+	case "apple/nlcontextualembedding":
+		return ModelAppleNLContextualEmbedding, nil
+	case "openai/text-embedding-3-large":
+		return ModelOpenAITextEmbedding3Large, nil
+	}
+
+	return 0, fmt.Errorf("unknown model: %s", s)
 }
 
 var Models = []Model{

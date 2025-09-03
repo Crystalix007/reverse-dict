@@ -115,25 +115,18 @@ func (s *SQLiteVec) RelatedWords(
 	stmt, err := s.db.PrepareContext(
 		ctx,
 		`
-		SELECT w.word, w.definition, w.example, w.author, best.distance, wf.phrase
-		FROM words w
-		JOIN (
+		WITH best AS (
 			SELECT
-				wf.id,
 				wf.word_id,
-				vec_distance_cosine(e.embedding, ?) AS distance
+				MIN(vec_distance_cosine(e.embedding, ?)) AS distance
 			FROM word_features wf
 			JOIN embeddings e ON e.word_feature_id = wf.id
-			WHERE (wf.word_id, distance) IN (
-				SELECT
-					wf2.word_id,
-					MIN(vec_distance_cosine(e2.embedding, ?))
-				FROM word_features wf2
-				JOIN embeddings e2 ON e2.word_feature_id = wf2.id
-				GROUP BY wf2.word_id
-			) AND e.embedding_model_id = ?
-		) best ON w.id = best.word_id
-		JOIN word_features wf ON wf.id = best.id
+			WHERE e.embedding_model_id = ?
+			GROUP BY wf.word_id
+		)
+		SELECT w.word, w.definition, w.example, w.author, best.distance, ''
+		FROM words w
+		JOIN best ON w.id = best.word_id
 		ORDER BY best.distance ASC
 		LIMIT ?
 		`,
@@ -144,7 +137,7 @@ func (s *SQLiteVec) RelatedWords(
 
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, vec, vec, model, limit)
+	rows, err := stmt.QueryContext(ctx, vec, model, limit)
 	if err != nil {
 		return nil, fmt.Errorf("querying statement: %w", err)
 	}

@@ -67,6 +67,41 @@ func (s *swamaEmbedder) Embed(ctx context.Context, phrases ...string) ([]Embeddi
 	return embeddings, nil
 }
 
+type swamaQueryEmbedder struct {
+	api *SwamaAPI
+}
+
+// swamaQueryEmbedder is an implementation of the [Embedder] interface for the
+// Swama API.
+var _ Embedder = &swamaQueryEmbedder{}
+
+func NewSwamaQueryEmbedder(api *SwamaAPI) Embedder {
+	return &swamaQueryEmbedder{
+		api: api,
+	}
+}
+
+// Embed returns the embeddings for the given search phrases from the Swama API.
+func (s *swamaQueryEmbedder) Embed(
+	ctx context.Context,
+	phrases ...string,
+) ([]Embedding, error) {
+	// Call the Swama API to get embeddings for the phrases
+	swamaEmbeddings, err := s.api.EmbedQuery(ctx, phrases...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the embeddings from [][]float64 to []Embedding (which is []float32)
+	embeddings := make([]Embedding, 0, len(swamaEmbeddings))
+
+	for _, vec := range swamaEmbeddings {
+		embeddings = append(embeddings, NewEmbeddingFromFloat64(vec))
+	}
+
+	return embeddings, nil
+}
+
 // openaiEmbedder is an implementation of the [Embedder] interface for the
 // OpenAI API.
 type openaiEmbedder struct {
