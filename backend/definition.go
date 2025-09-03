@@ -7,24 +7,6 @@ import (
 	"github.com/bobg/go-generics/v4/slices"
 )
 
-type Model int
-
-const (
-	ModelQwen3Embedding8B4B_DWQ     Model = 1
-	ModelAppleNLContextualEmbedding Model = 2
-)
-
-func (m Model) String() string {
-	switch m {
-	case ModelQwen3Embedding8B4B_DWQ:
-		return "mlx-community/Qwen3-Embedding-8B-4bit-DWQ"
-	case ModelAppleNLContextualEmbedding:
-		return "apple/nlcontextualembedding"
-	}
-
-	panic("unknown model")
-}
-
 var referenceRegex = regexp.MustCompile(`\[([^\]]+)\]`)
 
 type Word struct {

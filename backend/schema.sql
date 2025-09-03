@@ -36,4 +36,5 @@ INSERT
     OR REPLACE INTO embedding_models (id, name)
 VALUES
     (1, 'mlx-community/Qwen3-Embedding-8B-4bit-DWQ'),
-    (2, 'apple/nlcontextualembedding');
+    (2, 'apple/nlcontextualembedding'),
+    (3, 'openai/text-embedding-3-large');
