@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/openai/openai-go/v2"
 	slogchi "github.com/samber/slog-chi"
 	"github.com/spf13/cobra"
 
@@ -17,8 +18,9 @@ import (
 )
 
 type args struct {
-	host  string
-	quiet bool
+	host   string
+	models []string
+	quiet  bool
 }
 
 func main() {
@@ -34,6 +36,7 @@ func main() {
 
 	cmd.Flags().StringVarP(&args.host, "listen", "l", "localhost:8080", "Address to bind the server to")
 	cmd.Flags().BoolVarP(&args.quiet, "quiet", "q", false, "Suppress debug log output")
+	cmd.Flags().StringSliceVar(&args.models, "model", nil, "Models to use for query embeddings")
 
 	if err := cmd.Execute(); err != nil {
 		slog.Error("Error running server", slog.Any("error", err))
@@ -53,22 +56,33 @@ func run(ctx context.Context, args *args) error {
 		)
 	}
 
+	var models []backend.Model
+
+	for _, model := range args.models {
+		model, err := backend.ModelFromString(model)
+		if err != nil {
+			return fmt.Errorf("parsing model %q: %w", model, err)
+		}
+
+		models = append(models, model)
+	}
+
+	// Default to all models if unspecified.
+	if len(models) == 0 {
+		models = backend.Models
+	}
+
+	embedders, err := getEmbedders(models)
+	if err != nil {
+		return fmt.Errorf("getting embedders: %w", err)
+	}
+
 	sqlite, err := backend.NewSQLiteVec(
 		ctx,
 		"words.db",
 	)
 	if err != nil {
 		return fmt.Errorf("creating SQLiteVec: %w", err)
-	}
-
-	swamaAPI, err := backend.NewSwamaAPI(
-		url.URL{
-			Scheme: "http",
-			Host:   "localhost:28100",
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("creating SwamaAPI: %w", err)
 	}
 
 	listenAddress := url.URL{
@@ -79,7 +93,7 @@ func run(ctx context.Context, args *args) error {
 	apiAddress := listenAddress
 	apiAddress.Path = "/api"
 
-	api := backend.NewAPI(swamaAPI, sqlite, apiAddress)
+	api := backend.NewAPI(embedders, sqlite, apiAddress)
 
 	// Create global mux.
 	router := chi.NewMux()
@@ -119,4 +133,33 @@ func run(ctx context.Context, args *args) error {
 	}
 
 	return nil
+}
+
+func getEmbedders(
+	models []backend.Model,
+) (backend.Embedders, error) {
+	embedders := make(backend.Embedders)
+
+	for _, model := range models {
+		switch model {
+		case backend.ModelQwen3Embedding8B4B_DWQ:
+			swamaAPI, err := backend.NewSwamaAPI(
+				url.URL{
+					Scheme: "http",
+					Host:   "localhost:28100",
+				},
+			)
+			if err != nil {
+				return nil, fmt.Errorf("creating SwamaAPI: %w", err)
+			}
+
+			embedders[model] = backend.NewSwamaQueryEmbedder(swamaAPI)
+		case backend.ModelOpenAITextEmbedding3Large:
+			embedder := backend.NewOpenAIEmbedder(openai.EmbeddingModelTextEmbedding3Large)
+
+			embedders[model] = embedder
+		}
+	}
+
+	return embedders, nil
 }

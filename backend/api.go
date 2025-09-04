@@ -14,16 +14,16 @@ import (
 
 type API struct {
 	address   url.URL
-	swamaAPI  *SwamaAPI
+	embedder  Embedders
 	sqliteVec *SQLiteVec
 }
 
-// NewAPI creates a new API instance with the provided Swama API and SQLite
-// vector database.
-func NewAPI(swamaAPI *SwamaAPI, sqliteVec *SQLiteVec, address url.URL) *API {
+// NewAPI creates a new API instance with the provided [Embedder] backend and
+// SQLite vector database.
+func NewAPI(embedders Embedders, sqliteVec *SQLiteVec, address url.URL) *API {
 	return &API{
 		address:   address,
-		swamaAPI:  swamaAPI,
+		embedder:  embedders,
 		sqliteVec: sqliteVec,
 	}
 }
@@ -59,7 +59,7 @@ type SearchResponse struct {
 }
 
 type SearchResponseBody struct {
-	Results []SimilarDefinition `json:"results"`
+	Results map[Model][]SimilarDefinition `json:"results"`
 }
 
 // Search queries the DB for words with definitions that are semantically
@@ -71,7 +71,7 @@ func (a *API) Search(
 		Limit int    `query:"limit" json:"limit" description:"The maximum number of results to return" default:"10"`
 	},
 ) (*SearchResponse, error) {
-	queryEmbedding, err := a.swamaAPI.EmbedQuery(ctx, input.Query)
+	queryEmbeddings, err := a.embedder.Embed(ctx, input.Query)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"embedding query: %w",
@@ -79,27 +79,31 @@ func (a *API) Search(
 		)
 	}
 
-	if len(queryEmbedding) == 0 {
-		return nil, fmt.Errorf("no embeddings returned for query: %s", input.Query)
-	}
+	results := make(map[Model][]SimilarDefinition)
 
-	primaryEmbedding := NewEmbeddingFromFloat64(queryEmbedding[0])
+	for model, embeddings := range queryEmbeddings {
+		if len(embeddings) == 0 {
+			return nil, fmt.Errorf("no embeddings returned for query: %s", input.Query)
+		}
 
-	results, err := a.sqliteVec.RelatedWords(
-		ctx,
-		ModelQwen3Embedding8B4B_DWQ,
-		primaryEmbedding,
-		input.Limit,
-	)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"searching in SQLiteVec: %w",
-			err,
+		modelResults, err := a.sqliteVec.RelatedWords(
+			ctx,
+			model,
+			embeddings[0],
+			input.Limit,
 		)
-	}
+		if err != nil {
+			return nil, fmt.Errorf(
+				"searching in SQLiteVec: %w",
+				err,
+			)
+		}
 
-	if len(results) == 0 {
-		return nil, huma.Error404NotFound("no matching definitions found")
+		if len(modelResults) == 0 {
+			return nil, huma.Error404NotFound("no matching definitions found")
+		}
+
+		results[model] = modelResults
 	}
 
 	return &SearchResponse{

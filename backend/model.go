@@ -23,6 +23,21 @@ func (m Model) String() string {
 	panic("unknown model")
 }
 
+func (m Model) MarshalText() ([]byte, error) {
+	return []byte(m.String()), nil
+}
+
+func (m *Model) UnmarshalText(data []byte) error {
+	model, err := ModelFromString(string(data))
+	if err != nil {
+		return err
+	}
+
+	*m = model
+
+	return nil
+}
+
 func ModelFromString(s string) (Model, error) {
 	switch s {
 	case "mlx-community/Qwen3-Embedding-8B-4bit-DWQ":
