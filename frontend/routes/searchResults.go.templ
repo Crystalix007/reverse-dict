@@ -11,7 +11,10 @@ templ searchResults(searchResults map[backend.Model][]backend.Word) {
 					for _, item := range words {
 						<li>
 							<h2>{ item.Word }</h2>
-							<blockquote class="definition">{ item.Definition }</blockquote>
+							<p class="pre-wrap">{ item.Definition }</p>
+							if item.Example != "" {
+								<blockquote class="pre-wrap">{ item.Example }</blockquote>
+							}
 							if item.Author != "" {
 								<cite>{ item.Author }</cite>
 							}
