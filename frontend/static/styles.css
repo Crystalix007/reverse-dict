@@ -1,3 +1,9 @@
 blockquote.definition {
   white-space: pre-wrap;
 }
+
+.search-results {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}

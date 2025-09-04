@@ -11,7 +11,7 @@ import (
 
 // SearchResults renders the search results page.
 func SearchResults(w http.ResponseWriter, r *http.Request) {
-	var words []backend.Word
+	words := make(map[backend.Model][]backend.Word)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
@@ -24,8 +24,10 @@ func SearchResults(w http.ResponseWriter, r *http.Request) {
 		searchResults, err := backendclient.Get[backend.SearchResponseBody](
 			r.Context(),
 			url.URL{
-				Path:     "search",
-				RawQuery: "query=" + searchInput,
+				Path: "search",
+				RawQuery: url.Values{
+					"query": []string{searchInput},
+				}.Encode(),
 			},
 		)
 		if err != nil {
@@ -34,10 +36,12 @@ func SearchResults(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		words = make([]backend.Word, 0, len(searchResults.Results))
+		for model, results := range searchResults.Results {
+			words[model] = make([]backend.Word, 0, len(results))
 
-		for _, result := range searchResults.Results {
-			words = append(words, result.Word)
+			for _, result := range results {
+				words[model] = append(words[model], result.Word)
+			}
 		}
 	}
 
