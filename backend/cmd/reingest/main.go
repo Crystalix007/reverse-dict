@@ -47,7 +47,7 @@ func reingest(ctx context.Context) error {
 		backend.ModelOpenAITextEmbedding3Large: backend.NewOpenAIEmbedder(openai.EmbeddingModelTextEmbedding3Large),
 	}
 
-	rateLimiter := rate.NewLimiter(rate.Every(10*time.Second), 1)
+	rateLimiter := rate.NewLimiter(rate.Every(500*time.Millisecond), 1)
 
 	for word, err := range sqlite.GetWords(ctx) {
 		if err := rateLimiter.Wait(ctx); err != nil {
