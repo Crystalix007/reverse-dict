@@ -87,6 +87,8 @@ func run(ctx context.Context, args *args) error {
 		return fmt.Errorf("creating SQLiteVec: %w", err)
 	}
 
+	defer sqlite.Close()
+
 	listenAddress := url.URL{
 		Scheme: "http",
 		Host:   args.host,

@@ -32,6 +32,8 @@ func reingest(ctx context.Context) error {
 		return fmt.Errorf("creating SQLiteVec: %w", err)
 	}
 
+	defer sqlite.Close()
+
 	swama, err := backend.NewSwamaAPI(
 		url.URL{
 			Scheme: "http",

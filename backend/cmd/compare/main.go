@@ -54,6 +54,8 @@ func ingestData(ctx context.Context, args arguments) error {
 		return fmt.Errorf("creating sqlite database: %w", err)
 	}
 
+	defer db.Close()
+
 	swama, err := backend.NewSwamaAPI(
 		url.URL{
 			Scheme: "http",

@@ -52,6 +52,8 @@ func Run(ctx context.Context, args []string, flags flags) error {
 		return fmt.Errorf("creating sqlite database: %w", err)
 	}
 
+	defer db.Close()
+
 	var embedder backend.Embedder
 
 	switch model {
