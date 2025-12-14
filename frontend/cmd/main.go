@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -13,6 +15,7 @@ import (
 
 type args struct {
 	listenAddress string
+	serverAddress string
 }
 
 func main() {
@@ -27,6 +30,7 @@ func main() {
 	}
 
 	cmd.Flags().StringVarP(&args.listenAddress, "listen", "l", "localhost:3000", "Address to bind the server to")
+	cmd.Flags().StringVarP(&args.serverAddress, "server", "s", "http://localhost:8080/api/", "Address of the backend server")
 
 	if err := cmd.Execute(); err != nil {
 		slog.Error("error starting server", slog.Any("error", err))
@@ -37,5 +41,10 @@ func main() {
 func run(ctx context.Context, args args) error {
 	slog.InfoContext(ctx, "starting frontend server", slog.Any("address", args.listenAddress))
 
-	return http.ListenAndServe(args.listenAddress, frontend.Serve())
+	serverURL, err := url.Parse(args.serverAddress)
+	if err != nil {
+		return fmt.Errorf("parsing server address: %w", err)
+	}
+
+	return http.ListenAndServe(args.listenAddress, frontend.Serve(*serverURL))
 }

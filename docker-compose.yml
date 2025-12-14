@@ -1,0 +1,17 @@
+version: "3.0"
+services:
+  api:
+    build:
+      context: backend/
+      dockerfile: Containerfile
+    ports:
+      - "12080:8080/tcp"
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Containerfile
+    command:
+      - --listen=:3000
+      - --server=http://api:8080/api/
+    ports:
+      - "13000:3000/tcp"

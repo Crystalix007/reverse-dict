@@ -1,0 +1,26 @@
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25 AS build
+
+RUN apt update && apt install -y libsqlite3-dev
+
+WORKDIR /src
+COPY . .
+
+ARG TARGETOS TARGETARCH
+
+RUN \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    GOOS=$TARGETOS \
+    GOARCH=$TARGETARCH \
+    go build -ldflags="-s -w -extldflags=-static" -o /app/api ./cmd/api
+
+FROM --platform=$TARGETPLATFORM docker.io/library/alpine:3
+
+RUN adduser -u 1000 -H -S -s /sbin/nologin appuser
+USER appuser
+
+COPY --from=build /app/api /app/api
+
+ENTRYPOINT ["/app/api"]
+CMD [ "--listen=:8080" ]
+EXPOSE 8080/tcp

@@ -10,7 +10,7 @@ import (
 )
 
 // SearchResults renders the search results page.
-func SearchResults(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SearchResults(w http.ResponseWriter, r *http.Request) {
 	words := make(map[backend.Model][]backend.Word)
 
 	if err := r.ParseForm(); err != nil {
@@ -23,6 +23,7 @@ func SearchResults(w http.ResponseWriter, r *http.Request) {
 	if searchInput != "" {
 		searchResults, err := backendclient.Get[backend.SearchResponseBody](
 			r.Context(),
+			h.backendURL,
 			url.URL{
 				Path: "search",
 				RawQuery: url.Values{

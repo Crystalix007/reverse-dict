@@ -10,23 +10,18 @@ import (
 	"path"
 )
 
-var URL = url.URL{
-	Scheme: "http",
-	Host:   "localhost:8080",
-	Path:   "/api/",
-}
-
 // Get performs a GET request to the backend API.
 func Get[T any](
 	ctx context.Context,
+	baseURL url.URL,
 	overlayURL url.URL,
 ) (*T, error) {
 	client := &http.Client{}
 
 	joinedURL := url.URL{
-		Scheme:   URL.Scheme,
-		Host:     URL.Host,
-		Path:     path.Join(URL.Path, overlayURL.Path),
+		Scheme:   baseURL.Scheme,
+		Host:     baseURL.Host,
+		Path:     path.Join(baseURL.Path, overlayURL.Path),
 		RawQuery: overlayURL.RawQuery,
 		Fragment: overlayURL.Fragment,
 	}
