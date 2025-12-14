@@ -2,7 +2,7 @@ package routes
 
 import "github.com/Crystalix007/reverse-dict/backend"
 
-templ searchResults(searchResults map[backend.Model][]backend.Word) {
+templ searchResults(searchResults map[backend.Model][]backend.SimilarDefinition) {
 	<div>
 		<h1>Results</h1>
 		<div class="search-results">
@@ -10,7 +10,10 @@ templ searchResults(searchResults map[backend.Model][]backend.Word) {
 				<ul id={ model.String() + "-search-results" }>
 					for _, item := range words {
 						<li>
-							<h2>{ item.Word }</h2>
+							<div class="search-result-header">
+								<h2>{ item.Word.Word }</h2>
+								<p>{ item.Distance }</p>
+							</div>
 							<p class="pre-wrap">{ item.Definition }</p>
 							if item.Example != "" {
 								<blockquote class="pre-wrap">{ item.Example }</blockquote>

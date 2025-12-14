@@ -11,7 +11,7 @@ import (
 
 // SearchResults renders the search results page.
 func (h *Handler) SearchResults(w http.ResponseWriter, r *http.Request) {
-	words := make(map[backend.Model][]backend.Word)
+	words := make(map[backend.Model][]backend.SimilarDefinition)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
@@ -38,10 +38,10 @@ func (h *Handler) SearchResults(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for model, results := range searchResults.Results {
-			words[model] = make([]backend.Word, 0, len(results))
+			words[model] = make([]backend.SimilarDefinition, 0, len(results))
 
 			for _, result := range results {
-				words[model] = append(words[model], result.Word)
+				words[model] = append(words[model], result)
 			}
 		}
 	}
