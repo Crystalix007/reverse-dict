@@ -21,6 +21,8 @@ USER appuser
 
 COPY --from=build /app/api /app/api
 
+WORKDIR /data
+
 ENTRYPOINT ["/app/api"]
 CMD [ "--listen=:8080" ]
 EXPOSE 8080/tcp

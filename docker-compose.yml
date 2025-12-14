@@ -11,6 +11,10 @@ services:
       - "12080:8080/tcp"
     env_file:
       - ./.env
+    volumes:
+      - ./backend/words.db:/data/words.db:rw
+      - ./backend/words.db-shm:/data/words.db-shm:rw
+      - ./backend/words.db-wal:/data/words.db-wal:rw
   web:
     build:
       context: .
