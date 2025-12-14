@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -48,7 +49,14 @@ func (a *API) Serve() http.Handler {
 	}
 
 	// Register endpoints.
-	huma.Get(api, "/search", a.Search)
+	RegisterLogged(
+		api,
+		huma.Operation{
+			Method: http.MethodGet,
+			Path:   "/search",
+		},
+		a.Search,
+	)
 
 	return router
 }
@@ -60,6 +68,31 @@ type SearchResponse struct {
 
 type SearchResponseBody struct {
 	Results map[Model][]SimilarDefinition `json:"results"`
+}
+
+func RegisterLogged[I, O any](
+	api huma.API,
+	op huma.Operation,
+	handler func(ctx context.Context, input *I) (*O, error),
+) {
+	huma.Register(
+		api,
+		op,
+		func(ctx context.Context, i *I) (*O, error) {
+			output, err := handler(ctx, i)
+			if err != nil {
+				slog.ErrorContext(
+					ctx,
+					"request failed",
+					slog.String("error", err.Error()),
+				)
+
+				return output, err
+			}
+
+			return output, nil
+		},
+	)
 }
 
 // Search queries the DB for words with definitions that are semantically
