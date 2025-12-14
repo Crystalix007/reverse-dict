@@ -9,6 +9,8 @@ services:
       - --swama-address=http://host.docker.internal:28100
     ports:
       - "12080:8080/tcp"
+    env_file:
+      - ./.env
   web:
     build:
       context: .
