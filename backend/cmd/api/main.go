@@ -18,9 +18,10 @@ import (
 )
 
 type args struct {
-	host   string
-	models []string
-	quiet  bool
+	host         string
+	modelNames   []string
+	swamaAddress string
+	quiet        bool
 }
 
 func main() {
@@ -36,7 +37,8 @@ func main() {
 
 	cmd.Flags().StringVarP(&args.host, "listen", "l", "localhost:8080", "Address to bind the server to")
 	cmd.Flags().BoolVarP(&args.quiet, "quiet", "q", false, "Suppress debug log output")
-	cmd.Flags().StringSliceVar(&args.models, "model", nil, "Models to use for query embeddings")
+	cmd.Flags().StringSliceVar(&args.modelNames, "model", nil, "Models to use for query embeddings")
+	cmd.Flags().StringVar(&args.swamaAddress, "swama-address", "http://localhost:28100", "Address of the Swama API server")
 
 	if err := cmd.Execute(); err != nil {
 		slog.Error("Error running server", slog.Any("error", err))
@@ -58,7 +60,7 @@ func run(ctx context.Context, args *args) error {
 
 	var models []backend.Model
 
-	for _, model := range args.models {
+	for _, model := range args.modelNames {
 		model, err := backend.ModelFromString(model)
 		if err != nil {
 			return fmt.Errorf("parsing model %q: %w", model, err)
@@ -72,7 +74,7 @@ func run(ctx context.Context, args *args) error {
 		models = backend.Models
 	}
 
-	embedders, err := getEmbedders(models)
+	embedders, err := getEmbedders(args, models)
 	if err != nil {
 		return fmt.Errorf("getting embedders: %w", err)
 	}
@@ -136,6 +138,7 @@ func run(ctx context.Context, args *args) error {
 }
 
 func getEmbedders(
+	args *args,
 	models []backend.Model,
 ) (backend.Embedders, error) {
 	embedders := make(backend.Embedders)
@@ -143,11 +146,13 @@ func getEmbedders(
 	for _, model := range models {
 		switch model {
 		case backend.ModelQwen3Embedding8B4B_DWQ:
+			swamaURL, err := url.Parse(args.swamaAddress)
+			if err != nil {
+				return nil, fmt.Errorf("parsing Swama address: %w", err)
+			}
+
 			swamaAPI, err := backend.NewSwamaAPI(
-				url.URL{
-					Scheme: "http",
-					Host:   "localhost:28100",
-				},
+				*swamaURL,
 			)
 			if err != nil {
 				return nil, fmt.Errorf("creating SwamaAPI: %w", err)

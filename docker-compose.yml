@@ -4,6 +4,9 @@ services:
     build:
       context: backend/
       dockerfile: Containerfile
+    command:
+      - --listen=:8080
+      - --swama-address=http://host.docker.internal:28100
     ports:
       - "12080:8080/tcp"
   web:
