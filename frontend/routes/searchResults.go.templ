@@ -1,6 +1,9 @@
 package routes
 
-import "github.com/Crystalix007/reverse-dict/backend"
+import (
+	"github.com/Crystalix007/reverse-dict/backend"
+	"net/url"
+)
 
 templ searchResults(searchResults map[backend.Model][]backend.SimilarDefinition) {
 	<div>
@@ -11,7 +14,7 @@ templ searchResults(searchResults map[backend.Model][]backend.SimilarDefinition)
 					for _, item := range words {
 						<li>
 							<div class="search-result-header">
-								<h2>{ item.Word.Word }</h2>
+								<h2><a href={ "https://urbandictionary.com/define.php?term=" + url.QueryEscape(item.Word.Word) }>{ item.Word.Word }</a></h2>
 								<p>{ item.Distance }</p>
 							</div>
 							<p class="pre-wrap">{ item.Definition }</p>
