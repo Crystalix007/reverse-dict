@@ -12,12 +12,14 @@
 </head>
 
 <body>
-    <h1>Reverse Dict</h1>
-    <form id="search-form" hx-post="/search" hx-target="#result" hx-swap="innerHTML">
-        <input type="text" name="query" placeholder="Search by definition">
-        <input type="submit" />
-    </form>
-    <div id="result"></div>
+    <div class="hero">
+        <h1>Reverse Dict</h1>
+        <form id="search-form" class="search-form" hx-post="/search" hx-target="#search-results" hx-swap="innerHTML">
+            <input type="text" name="query" placeholder="Search by definition">
+            <input type="submit" />
+        </form>
+    </div>
+    <div id="search-results"></div>
 </body>
 
 </html>

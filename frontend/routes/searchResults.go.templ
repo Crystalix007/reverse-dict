@@ -6,7 +6,7 @@ import (
 )
 
 templ searchResults(searchResults map[backend.Model][]backend.SimilarDefinition) {
-	<div>
+	<div class="search-results-wrapper">
 		<h1>Results</h1>
 		<div class="search-results">
 			for model, words := range searchResults {
