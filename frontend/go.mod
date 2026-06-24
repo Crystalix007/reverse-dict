@@ -27,7 +27,7 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/getkin/kin-openapi v0.132.0 // indirect
-	github.com/go-chi/chi/v5 v5.2.2 // indirect
+	github.com/go-chi/chi/v5 v5.2.4 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
