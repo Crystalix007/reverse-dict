@@ -1,6 +1,6 @@
 module github.com/Crystalix007/reverse-dict/backend
 
-go 1.23.4
+go 1.25.0
 
 require (
 	github.com/danielgtaylor/huma/v2 v2.34.1
@@ -27,6 +27,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/openai/openai-go/v2 v2.3.0
 	github.com/spf13/pflag v1.0.6 // indirect
-	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/time v0.12.0
 )
